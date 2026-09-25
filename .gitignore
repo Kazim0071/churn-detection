@@ -1,0 +1,92 @@
+# ====================================================================
+# .gitignore for Churn Prediction ML Project
+# ====================================================================
+
+# --- Large Data Files (>100MB) ---
+data/user_logs_v2.csv
+
+# --- Jupyter Notebooks ---
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+*-checkpoint.ipynb
+
+# --- Python & Bytecode ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# --- Conda & Virtual Environments ---
+# Conda environment: churn-ml
+churn-ml/
+.conda/
+conda-meta/
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# --- Credentials & API Keys (Kaggle, Secrets) ---
+kaggle.json
+*.kaggle*
+%USERPROFILE%*
+.env*
+!.env.example
+*.pem
+*.key
+
+# --- IDEs & Code Editors ---
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+
+# --- Logs & Temporary Files ---
+*.log
+*.tmp
+*.temp
+scratch/
+
+# --- Experiment Tracking & Model Checkpoints (Optional / ML artifacts) ---
+mlruns/
+wandb/
+lightning_logs/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# --- Operating System Files ---
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+[Dd]esktop.ini
