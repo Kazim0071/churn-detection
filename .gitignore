@@ -2,8 +2,8 @@
 # .gitignore for Churn Prediction ML Project
 # ====================================================================
 
-# --- Large Data Files (>100MB) ---
-data/user_logs_v2.csv
+# --- Data Files ---
+/data/
 
 # --- Jupyter Notebooks ---
 .ipynb_checkpoints
