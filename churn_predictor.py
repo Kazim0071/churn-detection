@@ -1,5 +1,6 @@
 import pandas as pd
 
+
 class ChurnPredictor:
     """Preprocess + model + threshold ko ek saath rakhta hai."""
 

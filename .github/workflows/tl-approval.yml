@@ -1,0 +1,36 @@
+name: TL Approval
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, labeled, unlabeled]
+
+permissions:
+  pull-requests: write
+  issues: write
+
+jobs:
+  tl-approved:
+    name: Tech Lead approval
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Remove stale approval after new commits
+        if: ${{ github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'tl-approved') }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh pr edit "$PR_NUMBER" --remove-label "tl-approved" --repo "$REPO"
+          echo "::error::New commits were pushed, so the tl-approved label was removed. The Tech Lead must review again."
+          exit 1
+
+      - name: Require tl-approved label
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'tl-approved') }}
+        run: |
+          echo "::error::Missing 'tl-approved' label. Get the Tech Lead review first."
+          exit 1
+
+      - name: Approved
+        run: echo "Tech Lead approval found."
