@@ -1,124 +1,185 @@
-**Monorepo**:
+# ADR 0001: Monorepo layout and application stack
 
-pros:
-1- This is beneficial if someone look into a repository and it can get a clear picture of all the code.
-2- In this project only 1 developer is working so maintaining 1 repo is easier then maintaining or working with multiple repos.
-3- In monorepo there will be no version mismatch repo problems, whenever the shape of api response change there will be a single commit and PR to all changes.
-4- setup would be very simple, by using git clone and docker compose up and the project can run easily on local.
+- **Date:** 2026-11-06
+- **Status:** Proposed
+- **Ticket:** CHURN-21
+- **Author:** Qasim
+- **Reviewer:** Tech Lead
 
-cons:
+## Context
 
-- Monorepo should be the problem when the stack is different like ml mkodel in python and backend in MERN. because we should have to manage tooling and dependancies differently
-- we also have to create ci because we dont want everything all the builds should run.
-- Repo can be heavy if model and dataset files should be added.
+TuneLoop needs a churn prediction pilot: a weekly list of up to 500 high-risk monthly subscribers, shown in a simple web dashboard with contact details and a CSV export. This ADR decides three things: how the code is organised (one repo or several), the backend framework and the frontend framework. The database, the source of contact data and the login mechanism are decided in separate ADRs.
 
-**Saperate Repo**:
+The constraints that shape this decision:
 
-pros:
+- **One developer.** Every part of the system must be easy for one person to understand, run, maintain and change. There is no one else to review or hand work over to.
+- **Walkthrough in 3–4 weeks.** The client accepted a working prototype at the Sprint 2 Review, so the stack must let the first end-to-end slice ship quickly.
+- **Data stays internal.** All customer data is personal and must stay inside TuneLoop's infrastructure. No third-party services, external cloud hosting or third-party AI APIs may receive it.
+- **The model already exists.** A LightGBM pipeline wrapped in the `ChurnPredictor` class is trained and saved as `churn_model.joblib` with Python, scikit-learn and joblib.
+- **Training and serving dependencies must be separate** (Tech Lead requirement): heavy notebook and training libraries must not end up in the serving environment.
+- **Existing repo:** Python ML code, unit tests and CI (ruff + pytest) are already in `PrimeNest-Inov/churn-detection`.
 
-- Every part has its own clean history
-- suitable for different teams working with different permissions
-- Ml repo stick on Python only and clean tooling
-- For every part of version and deployment independently
+## Options considered
 
-cons:
+### Decision 1: repository layout
 
-- Coordination is a problem. if the api change then have to create 2 different PRs to sync.
-- look very scattered when someone tried to check or read the repo. user required 3 different links to seed a complete picture.
-- Duplicate configs, 3 different CIs. diferent README's and different env setup maintainance.
+#### Option A: monorepo (one repo for ML, backend and frontend)
 
-Conclusion:
-As only one developer is working in this project so monorepo is a good choice and also pur model is already ready and exported in joblib file which is working fast and effective with python backend so maily the stack is same and we can consider this monorepo structure. for 3-4 week walking walkthrough this should be easy to maintain for a developer.
+Pros:
 
-**For backend**
-
-python (Fast api) pros:
-
-- direct integration with ML models and load in simple processm no need to hop on different http service
-- Fast async support, its very fast in python framework.
-- can get pydantic validation. auto validation define on req and res responses
-- it is now industry standard witl ML roles
-
-cons:
-
-- Auth, admin panel, and orm and etc and not buil-in. have to do it by the developer manually.
-- it requires to design Bare full featured apps structure
-
-Python (Django) pros:
-
-- can have everything built-in like auth, orm and etc.
-- easy handeling the admin pannel and fastly.
-- suitable, mature and stable backend for big and complex apps.
-- strong REST framework for apis in Django.
-
-cons:
-
-- very heavy and overkill for model serving and apis.
-- learning curve is high because it has its its own conventions
-- async support is natual like FAST api
-- its not suitable for all databses, mainly suitable for SQL
-
-MERN pros:
-
-- frontend and backend both are in js so types share will be stable.
-- npm ecosystem is very big and can perfectly work with Mongodb
-- realtime updates like socket.io is suitable for MERN
-
-cons:
-
-- Model is in python and, there would be required to maek do languages and 2 different services.
-- error handeling, validationds and etc can be created manually.
-
-conclution:
-we should go with the Fast api because our model is exported in joblib that work suitably and fastly with fast api, and our project is not to created a heavy web app but just for the normal ML serving backend. model can load directly in python fast api and strong compatibility.
-
-**Froentend**:
-
-React pros:
-
-- Big ecosystema nd community and can find every solution possible.
-- lightweight and flexible. can create any structure you can want?
-- web server can fast because of vite
-- Pure client side app and concept is simple
+- Anyone opening the repo sees the whole system in one place.
+- With one developer, one repo is easier to maintain than several.
+- No version mismatch between parts: when the API response shape changes, the backend and frontend change in one commit and one PR.
+- Simple setup: one `git clone`, then the whole stack starts locally with one command.
 
 Cons:
 
-- Everything, routing, fetchng and folder structure decided by own.
-- SEO is weak in defalut
-- Structure can be skrewed if the the project is big.
+- Python and JavaScript tooling and dependencies must be managed side by side in one repo.
+- CI needs path filters so that a frontend change does not run the Python jobs and the other way round.
+- The repo can become heavy if model files or datasets are committed.
 
-Nextjs pros:
+#### Option B: separate repos (ML, backend, frontend)
 
-- benefit of fale base routing.
-- SEO optimized because of SSR, SSG and Server components.
-- built in API routing, and gor small backend can be written in it like (proxy and auth)
-- Image optimization, laypouts and loading staes are built in
-- industry demanded
+Pros:
 
-cons:
+- Each part has its own clean history.
+- Suits separate teams with different permissions.
+- The ML repo stays Python-only with clean tooling.
+- Each part can be versioned and deployed independently.
 
-- high concepts, server vs slient components, caching, rendering modes.
-- caching behaviour confuse sometimes.
-- extra features for simple dashboard.
+Cons:
 
-conslution:
-Naxt.js integeration with Fast api is very clean and professional. proxy making with Route handlers can silve CORS and backend URL problems. optimized structure dor Dashboa4rd, predictions and customer detail like pages can be clean with file base routing. Easy development and get free live demo, which is suitable for our 3-4 week demo wolkthorugh. can reduce cost. market value is high and industry standard.
+- Coordination cost: one API change needs two PRs in two repos, kept in sync by hand.
+- Scattered for a reader: three links are needed to see the complete picture.
+- Duplicated configuration: three CI pipelines, three READMEs and three environment setups to maintain.
 
-**Q4. One Developer Constraint**:
-**ANS:** Yes, This project will handle by single developer. thats why every archetecture decision taken on this bases that a single developer can easily understand, run, maintain and update the project. For a developer the time is short and no one mostly available for code review everytime. So thats why simplicity is very important in this.
+### Decision 2: backend framework
 
-Selected architecture make maintainance simple:
+#### Option A: FastAPI (Python)
 
-- **monorepo:** evrything is in the a same repo so. cloning, readme and ci pipeline and even if there would be change in api so it can be commited in a simgle backend and forentend.
-- **Fast API:** Backend and Ml is in the same python service. model can load directly in backend. no need for different service.
-- **Next.js**- Developer is easy with Next.js and development can be fast and not need it to learn many things. -**only 2 services:** Froentend on vercel and backend on render/railway. its easy to menage by a single developer.
+Pros:
 
-We dont decide Express + Fast api hybrid approach because it is dificult for the developer in that there could be 2 backends and 3 different service. which is overwehlm for a single developer.
+- Loads the saved model directly in the same process; no extra service or network hop between the API and the model.
+- Fast, with native async support.
+- Pydantic validates requests and responses automatically.
+- Automatic interactive API docs (`/docs`).
+- Widely used for ML serving, so it matches the roles the project targets.
 
-unnecessary complexity avoid ki gayi hai:
+Cons:
 
-Microservices, Kubernetes, message queues aur caching layers (Redis) shuru se use nahi kiye gaye, kyunke project ko abhi inki zarurat nahi.
-Django jaisa heavy framework nahi liya gaya, kyunke uske zyadatar features is project mein use nahi hote.
-Sirf ek database use hoga.
-Saara business logic sirf FastAPI mein hoga. Next.js sirf UI ke liye hoga, taake logic do jagah na bikhre.
-Model training alag script (ml/train.py) mein hogi, aur API sirf saved model load karke prediction degi.
+- No built-in authentication, admin panel or ORM; these are added and configured by the developer.
+- The application structure has to be designed by the developer.
+
+#### Option B: Django (Python)
+
+Pros:
+
+- Authentication, ORM and admin panel are built in.
+- The admin panel is quick to set up.
+- Mature and stable for large, complex applications.
+- Django REST Framework is a strong toolkit for APIs.
+
+Cons:
+
+- Heavy and more than this project needs for model serving and a few API endpoints.
+- Steeper learning curve because of its own conventions.
+- Async support is less natural than in FastAPI.
+- Built mainly around relational databases.
+
+#### Option C: Express / Node.js (MERN-style)
+
+Pros:
+
+- Frontend and backend both in JavaScript/TypeScript, so types can be shared.
+- Very large npm ecosystem.
+- Good fit for real-time features (e.g. Socket.IO).
+
+Cons:
+
+- The model is in Python, so a Node backend would still need a separate Python service to run it: two languages and two backend services.
+- Validation and error handling are written by hand.
+
+**Rejected hybrid (Express + FastAPI):** two backends plus a frontend would mean three services for one developer, which is too much to run and maintain.
+
+### Decision 3: frontend framework
+
+#### Option A: React + Vite (client-side app)
+
+Pros:
+
+- Large ecosystem and community.
+- Lightweight and flexible.
+- Fast development server with Vite.
+- A pure client-side app is a simple mental model.
+
+Cons:
+
+- Routing, data fetching and folder structure must all be chosen by the developer.
+- Weak SEO by default (not relevant for an internal dashboard).
+- Structure can drift as the project grows.
+
+#### Option B: Next.js
+
+Pros:
+
+- File-based routing.
+- Route handlers can act as a small server-side proxy to the backend, which avoids CORS issues and keeps the backend URL off the browser.
+- Layouts and loading states are built in.
+- The developer already uses Next.js daily, so there is little to learn.
+- High industry demand.
+
+Cons:
+
+- More concepts: server vs client components, caching, rendering modes.
+- Caching behaviour can be confusing.
+- Many features (SSR, SEO, image optimisation) are more than a simple internal dashboard needs.
+- Sends telemetry to Vercel by default, which must be disabled.
+
+## Decision
+
+1. **Monorepo.** With one developer and a 3–4 week deadline, one repo means one clone, one README, one CI pipeline, and API changes that land in a single PR. The main cost (mixed tooling) is handled with path filters in CI and clearly separated folders.
+2. **FastAPI for the backend.** The model is already a Python LightGBM pipeline saved with joblib, so FastAPI can load it directly in the same process with no extra service. Pydantic gives input validation for free, which protects the model from bad input. The project is a model-serving API with a few endpoints, not a large web application, so Django would be more than needed.
+3. **Next.js for the frontend.** The developer already works with Next.js, which matters most for the deadline. Route handlers proxy requests to FastAPI, which avoids CORS and keeps the backend address internal. File-based routing keeps the dashboard pages organised. All business logic stays in FastAPI; Next.js is only the UI, so logic does not spread across two places.
+
+### Layout
+
+```
+apps/web/          Next.js dashboard (UI only)
+services/api/      FastAPI backend: loads the model and serves the API
+ml/                notebooks, training code, evaluation, model card
+docs/adr/          architecture decision records
+```
+
+### Training vs serving dependencies
+
+Training and serving run in separate environments with separate requirements files:
+
+| Environment               | Libraries                                                                 |
+| ------------------------- | ------------------------------------------------------------------------- |
+| Training (`ml/`)          | pandas, numpy, scikit-learn, lightgbm, joblib, matplotlib, jupyter, tqdm  |
+| Serving (`services/api/`) | fastapi, uvicorn, pydantic, scikit-learn, lightgbm, joblib, pandas, numpy |
+
+Notebook and plotting libraries (jupyter, matplotlib, tqdm) stay out of serving, so the serving environment and its Docker image stay small. LightGBM and scikit-learn must be in **both** environments, because loading `churn_model.joblib` needs the same libraries the model was trained with.
+
+### Deployment
+
+Because data must stay internal, the whole stack (Next.js, FastAPI, database) runs with Docker Compose on internal infrastructure; for the simulation, that is the developer's machine. No public cloud hosting (Vercel, Render, AWS) is used. Only open-source libraries that run locally are used, and no data is sent to third-party AI services.
+
+### Complexity deliberately avoided
+
+Microservices, Kubernetes, message queues and caching layers (e.g. Redis) are not used, because the pilot does not need them. Only one database will be used (chosen in ADR 0002). Model training stays in `ml/`; the API only loads the saved model and returns predictions.
+
+## Consequences
+
+- **CI needs path filters** so Python and JavaScript jobs run only when their part of the repo changes.
+- **Two package ecosystems** (pip and npm) are maintained in one repo.
+- **Versions must match exactly.** scikit-learn and LightGBM versions are pinned and identical in the training and serving environments (currently scikit-learn==1.9.1), or the model may fail to load or give different results.
+- **Preprocessing ships with the model.** Scaling and encoding stay inside the saved scikit-learn pipeline, so serving applies exactly the same transformations as training.
+- **Moving `ChurnPredictor` into the monorepo changes its module path**, and joblib stores that path inside `churn_model.joblib`. The model must be re-saved or loaded with a compatible path (CHURN-6).
+- **Next.js telemetry must be disabled** (`NEXT_TELEMETRY_DISABLED=1`) in every environment, to respect the data constraint (CHURN-7).
+- **No hosted preview URLs.** Because nothing is deployed to public cloud, QA tests run on a clean checkout of the PR branch instead of a preview link.
+- **Model files are not committed.** `churn_model.joblib` stops being tracked in Git (CHURN-6) so the repo stays light.
+
+## Review date
+
+After the Sprint 2 Review (client walkthrough): check whether the monorepo, FastAPI and Next.js slowed delivery anywhere or caused integration problems.
