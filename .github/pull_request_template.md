@@ -25,3 +25,4 @@
 - [ ] Gemini bot comments resolved (fixed, or answered with a reason)
 - [ ] Tech Lead review pasted as a `[Tech Lead Review]` comment
 - [ ] Docs/README updated (if needed)
+- [ ] QA passed (qa-passed label)
